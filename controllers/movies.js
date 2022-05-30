@@ -2,6 +2,7 @@ const Movie = require('../models/movies');
 
 const NotFoundError = require('../errors/NotFoundError');
 const AuthorViolationError = require('../errors/AuthorViolationError');
+const BadRequestError = require('../errors/BadRequestError');
 
 const getMovies = (req, res, next) => {
   Movie.find({})
@@ -16,14 +17,18 @@ const postMovie = (req, res, next) => {
   Movie.create({ ...req.body, owner })
     .then((movie) => res.send(movie))
     .catch((err) => {
-      next(err);
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError(err.message));
+      } else {
+        next(err);
+      }
     });
 };
 
 const removeMovie = (req, res, next) => {
   const currentUser = req.user._id;
-  const { movieId } = req.params;
-  Movie.findById(movieId)
+  const { id } = req.params;
+  Movie.findById(id)
     .then((movie) => {
       if (!movie) {
         throw new NotFoundError('Фильм с данным ID не обнаружен');
@@ -33,8 +38,9 @@ const removeMovie = (req, res, next) => {
           'Вы не являетесь владельцем данного фильма',
         );
       }
+      return (movie);
     })
-    .then(() => Movie.findByIdAndRemove(movieId))
+    .then((movie) => movie.remove())
     .then((movie) => {
       res.send({
         message: `Фильм "${movie.nameRU}" успешно удален`,

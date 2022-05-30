@@ -1,4 +1,4 @@
-const linkRegExp = /^https?:\/\/(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]+[a-zA-Z0-9])|([a-zA-Z0-9]*)\.)+[a-zA-Z]{2,}(\/[\w.+@:_'~,-=#;!&[\]/$|?*()]+)*$/;
-const emailRegExp = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+const dbAddr = 'mongodb://localhost:27017/moviesdb';
+const localKey = 'some-secret-key';
 
-module.exports = { linkRegExp, emailRegExp };
+module.exports = { dbAddr, localKey };

@@ -5,25 +5,23 @@ const User = require('../models/users');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequestError = require('../errors/BadRequestError');
 const ConflictError = require('../errors/ConflictError');
+const { localKey } = require('../utils/constants');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
 const createUser = (req, res, next) => {
   const { email, password, name } = req.body;
-  User.findOne({ email })
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({ name, email, password: hash }))
     .then((user) => {
-      if (user) {
-        throw new ConflictError(
-          'Пользователь с данным email уже зарегистрирован',
-        );
-      }
+      const newUser = user.toObject();
+      delete newUser.password;
+      res.send(newUser);
     })
-    .then(() => bcrypt
-      .hash(password, 10)
-      .then((hash) => User.create({ name, email, password: hash }))
-      .then(() => User.findOne({ email }))
-      .then((user) => res.send(user)))
     .catch((err) => {
+      if (err.code === 11000) {
+        next(new ConflictError('Пользователь с данным email уже зарегистрирован'));
+      }
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы невалидные данные'));
       } else {
@@ -53,17 +51,25 @@ const getUserInfo = (req, res, next) => {
 const updateUserInfo = (req, res, next) => {
   const { name, email } = req.body;
   const owner = req.user._id;
-  User.findByIdAndUpdate(
-    owner,
-    { name, email },
-    { new: true, runValidators: true },
-  )
+  User.findOne({ email })
+    .then((user) => {
+      if (user._id.toString() !== owner) {
+        throw new ConflictError(
+          'Пользователь с данным email уже зарегистрирован',
+        );
+      }
+    })
+    .then(() => User.findByIdAndUpdate(
+      owner,
+      { name, email },
+      { new: true, runValidators: true },
+    ))
     .then((user) => {
       res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы невалидные данные'));
+        next(new BadRequestError(err.message));
       } else {
         next(err);
       }
@@ -74,7 +80,7 @@ const login = (req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'some-secret-key', {
+      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : localKey, {
         expiresIn: '7d',
       });
       res.send({ token });

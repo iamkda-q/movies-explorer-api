@@ -14,6 +14,9 @@ const connectDB = require('./middlewares/connectDB');
 const { NODE_ENV, PORT } = process.env;
 
 const app = express();
+app.use(cors());
+app.use(helmet());
+app.use(requestLogger);
 /* 100 запросов с одного IP за 15 минут */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -21,9 +24,6 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(cors());
-app.use(helmet());
-app.use(requestLogger);
 app.use(bodyParser.json());
 app.use('/', router);
 app.use(errorLogger);
