@@ -38,13 +38,7 @@ const getUserInfo = (req, res, next) => {
       res.send(user);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы некорректные данные'));
-      } else if (err.name === 'CastError') {
-        next(new BadRequestError('Пользователя с данным ID не существует'));
-      } else {
-        next(err);
-      }
+      next(err);
     });
 };
 
