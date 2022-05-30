@@ -53,7 +53,7 @@ const updateUserInfo = (req, res, next) => {
   const owner = req.user._id;
   User.findOne({ email })
     .then((user) => {
-      if (user._id.toString() !== owner) {
+      if (user && user._id.toString() !== owner) {
         throw new ConflictError(
           'Пользователь с данным email уже зарегистрирован',
         );
