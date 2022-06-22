@@ -5,8 +5,9 @@ const AuthorViolationError = require('../errors/AuthorViolationError');
 const BadRequestError = require('../errors/BadRequestError');
 
 const getMovies = (req, res, next) => {
+  const owner = req.user._id;
   Movie.find({})
-    .then((movies) => res.send(movies))
+    .then((movies) => res.send(movies.filter((movie) => movie.owner.toString() === owner)))
     .catch((err) => {
       next(err);
     });
